@@ -2,7 +2,8 @@ from datetime import time, timezone
 from discord import File
 from discord.ext import tasks
 from discord.ext.commands import Cog, command, has_permissions
-from os import system, listdir
+from os import system, listdir, replace
+from filecmp import cmp
 import shelve
 
 with shelve.open('./data/config') as db:
@@ -24,9 +25,18 @@ class Updating(Cog):
 
     @tasks.loop(time=times)
     async def lb_update(self):
+        for filename in listdir('./data/db'):
+            if filename.endswith('Leaderboard.txt'):
+                replace(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}")
+        
         system('python ./lib/leaderboards.py')
 
-        if update_channel:
+        changes = []
+        for filename in listdir('./data/db'):
+                    if filename.endswith('Leaderboard.txt'):
+                        changes.append(not cmp(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}"))
+
+        if update_channel and any(changes):
             channel = self.bot.get_channel(CHANNEL_ID)
             await channel.purge(limit = 10)
 
@@ -41,11 +51,22 @@ class Updating(Cog):
     @has_permissions(administrator=True)
     async def update_leaderboard(self, ctx):
         msg = await ctx.send("Updating leaderboards...")
+
+        for filename in listdir('./data/db'):
+            if filename.endswith('Leaderboard.txt'):
+                replace(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}")
+        
         system('python ./lib/leaderboards.py')
+
         await msg.delete()
         await ctx.send("Leaderboards updated!")
 
-        if update_channel:
+        changes = []
+        for filename in listdir('./data/db'):
+                    if filename.endswith('Leaderboard.txt'):
+                        changes.append(not cmp(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}"))
+
+        if update_channel and any(changes):
             channel = self.bot.get_channel(CHANNEL_ID)
             await channel.purge(limit = 10)
 
