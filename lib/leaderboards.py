@@ -6,6 +6,8 @@ import csv
 from table2ascii import table2ascii, PresetStyle, Alignment
 import shelve
 
+# ----------- Helper Functions --------------- 
+
 def seconds_to_time_format(total_seconds):
     show_ms = game.ruleset.get('show-milliseconds', False)
 
@@ -35,28 +37,6 @@ def seconds_to_time_format(total_seconds):
     # Fallback for 0ms if everything else is empty
     return " ".join(parts) if parts else "0ms"
 
-print("Updating leaderboards...")
-
-with shelve.open('./data/config') as db:
-    game_name = db['game_name']
-    game_choice = db['game_choice']
-    make_FG = db['make_FG']
-    orientation_FG = db['orientation_FG']
-    defaults_FG = db['defaults_FG']
-    make_IL = db['make_IL']
-    orientation_IL = db['orientation_IL']
-    defaults_IL = db['defaults_IL']
-    make_ranking = db['make_ranking']
-
-api = srcomapi.SpeedrunCom()
-game = api.search(sdt.Game, {"name": game_name})[game_choice]
-
-categories = [category for category in game.categories]
-categories_FG = [category for category in categories if category.type == 'per-game']
-categories_IL = [category for category in categories if category.type == 'per-level']
-levels = [level for level in game.levels]
-
-player_colors = {}
 
 def get_leaderboard_params(category, record_index, top_count, use_defaults):
     """Handles the extraction of default variables into the params dictionary."""
@@ -123,6 +103,30 @@ def save_df_as_image(df, filename):
     plt.savefig(image_path, transparent=True, bbox_inches='tight', dpi=500)
     plt.close()
     print(f"Success! Image saved as {filename}")
+
+
+print("Updating leaderboards...")
+
+with shelve.open('./data/config') as db:
+    game_name = db['game_name']
+    game_choice = db['game_choice']
+    make_FG = db['make_FG']
+    orientation_FG = db['orientation_FG']
+    defaults_FG = db['defaults_FG']
+    make_IL = db['make_IL']
+    orientation_IL = db['orientation_IL']
+    defaults_IL = db['defaults_IL']
+    make_ranking = db['make_ranking']
+
+api = srcomapi.SpeedrunCom()
+game = api.search(sdt.Game, {"name": game_name})[game_choice]
+
+categories = [category for category in game.categories]
+categories_FG = [category for category in categories if category.type == 'per-game']
+categories_IL = [category for category in categories if category.type == 'per-level']
+levels = [level for level in game.levels]
+
+player_colors = {}
 
 # --- Full Game (FG) Logic ---
 records_FG = {}
