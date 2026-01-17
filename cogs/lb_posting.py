@@ -33,7 +33,7 @@ class Posting(Cog):
         if not listdir('./data/db'):
             await ctx.send("No leaderboards have been created.")
         else:
-            for filename in listdir('./data/db'):
+            for filename in sorted(listdir('./data/db')):
                 if filename.endswith('Leaderboard.txt'):
                     await ctx.send(f"__**{filename.replace('_',' ')[:-4]}**__", file=File(f"./data/db/{filename}"))
     

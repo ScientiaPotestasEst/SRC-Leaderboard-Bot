@@ -99,19 +99,19 @@ if make_IL:
                             runners = runners + player.name
                         else:
                             runners = runners + player.name + u'\xb7' # center dot = u'\xb7'
-                record_holders = record_holders + '\n' + runners
+                    record_holders = record_holders + '\n' + runners
                 names.append(record_holders)
                 combo.append(times[categories_IL.index(category)] + names[categories_IL.index(category)])
         table.append(combo)
     
     if orientation_IL == 'vertical':
-        headers = [' Category\Stage '] + [' '+level.name+' ' for level in levels]
+        headers = [' Category\\Stage '] + [' '+level.name+' ' for level in levels]
         table = [list(i) for i in zip(*table)]
         for category in categories_IL:
             table[categories_IL.index(category)].insert(0, category.name)
     
     elif orientation_IL == 'horizontal':
-        headers = [' Stage\Category '] + [('   '+category.name+'   ') for category in categories_IL]
+        headers = [' Stage\\Category '] + [('   '+category.name+'   ') for category in categories_IL]
         for level in levels:
             table[levels.index(level)].insert(0, level.name)
 
@@ -161,12 +161,12 @@ if make_FG:
         table.append(combo)
     
     if orientation_FG == 'vertical':
-        headers = [' Category\Placement ', ' First place ', ' Second place ', ' Third place ']
+        headers = [' Category\\Placement ', ' First place ', ' Second place ', ' Third place ']
         for category in categories_FG:
             table[categories_FG.index(category)].insert(0, category.name)
     
     elif orientation_IL == 'horizontal':
-        headers = [' Placement\Category '] + [('   '+category.name+'   ') for category in categories_FG]
+        headers = [' Placement\\Category '] + [('   '+category.name+'   ') for category in categories_FG]
         table = [list(i) for i in zip(*table)]
         table[0].insert(0, ' 1st ')
         table[1].insert(0, ' 2nd ')

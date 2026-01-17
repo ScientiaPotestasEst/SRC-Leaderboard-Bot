@@ -3,7 +3,7 @@ from discord.ext.commands import Bot, MissingPermissions
 from os import listdir
 from asyncio import run
 
-from lib import setup
+# from lib import setup
 
 PREFIX = '$'
 INTENTS = Intents.all()

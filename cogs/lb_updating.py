@@ -43,7 +43,7 @@ class Updating(Cog):
             if not listdir('./data/db'):
                 await channel.send("No leaderboards have been created.")
             else:
-                for filename in listdir('./data/db'):
+                for filename in sorted(listdir('./data/db')):
                     if filename.endswith('Leaderboard.txt'):
                         await channel.send(f"__**{filename.replace('_',' ')[:-4]}**__", file=File(f"./data/db/{filename}"))
     
@@ -73,7 +73,7 @@ class Updating(Cog):
             if not listdir('./data/db'):
                 await channel.send("No leaderboards have been created.")
             else:
-                for filename in listdir('./data/db'):
+                for filename in sorted(listdir('./data/db')):
                     if filename.endswith('Leaderboard.txt'):
                         await channel.send(f"__**{filename.replace('_',' ')[:-4]}**__", file=File(f"./data/db/{filename}"))
 
