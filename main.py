@@ -11,7 +11,7 @@ PREFIX = '$'
 INTENTS = Intents.all()
 
 load_dotenv()
-TOKEN = os.getenv('BOT_TOKEN')
+TOKEN = os.getenv('YAT_TOKEN')
 bot = Bot(command_prefix=PREFIX, intents=INTENTS)
 
 @bot.event

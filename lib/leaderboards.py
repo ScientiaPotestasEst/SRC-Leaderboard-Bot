@@ -1,7 +1,37 @@
 import srcomapi
 import srcomapi.datatypes as sdt
+import pandas as pd
 from table2ascii import table2ascii, PresetStyle, Alignment
 import shelve
+
+def seconds_to_time_format(total_seconds):
+    show_ms = game.ruleset.get('show-milliseconds', False)
+
+    remaining_ms = int(total_seconds * 1000)
+    
+    s, ms = divmod(remaining_ms, 1000)
+    m, s = divmod(s, 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    units = [
+        (d, 'd', 1, d > 0),
+        (h, 'h', 2, d > 0 or h > 0),
+        (m, 'm', 2, d > 0 or h > 0 or m > 0),
+        (s, 's', 2, d > 0 or h > 0 or m > 0 or s > 0 or not show_ms),
+        (ms, 'ms', 3, show_ms)
+    ]
+
+    parts = []
+    for value, suffix, precision, condition in units:
+        if condition:
+            # For the very first unit in the string, we don't want leading zeros
+            if not parts:
+                parts.append(f"{value}{suffix}")
+            else:
+                parts.append(f"{value:0{precision}d}{suffix}")
+
+    # Fallback for 0ms if everything else is empty
+    return " ".join(parts) if parts else "0ms"
 
 print("Updating leaderboards...")
 
@@ -19,64 +49,75 @@ with shelve.open('./data/config') as db:
 api = srcomapi.SpeedrunCom()
 game = api.search(sdt.Game, {"name": game_name})[game_choice]
 
-if game.ruleset['show-milliseconds'] == False:
-    def convert(seconds):
-        minutes, seconds = divmod(seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        if days == 0 and hours == 0 and minutes == 0:
-            return f'{int(seconds):01d}'+'s'
-        if days == 0 and hours == 0 and minutes != 0:
-            return f'{int(minutes):01d}'+'m '+f'{int(seconds):02d}'+'s'
-        if days == 0 and hours != 0:
-            return f'{int(hours):01d}'+'h '+f'{int(minutes):02d}'+'m '+f'{int(seconds):02d}'+'s'
-        else:
-            return f'{int(days):01d}'+'d '+f'{int(hours):02d}'+'h '+f'{int(minutes):02d}'+'m '+f'{int(seconds):02d}'+'s'
-elif game.ruleset['show-milliseconds'] == True:
-    def convert(seconds):
-        seconds, milliseconds = divmod(seconds*1000, 1000)
-        minutes, seconds = divmod(seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        if days == 0 and hours == 0 and minutes == 0 and seconds == 0:
-            return f'{int(milliseconds):01d}'+'ms'
-        if days == 0 and hours == 0 and minutes == 0 and seconds != 0:
-            return f'{int(seconds):01d}'+'s '+f'{int(milliseconds):03d}'+'ms'
-        if days == 0 and hours == 0 and minutes != 0:
-            return f'{int(minutes):01d}'+'m '+f'{int(seconds):02d}'+'s '+f'{int(milliseconds):03d}'+'ms'
-        if days == 0 and hours != 0:
-            return f'{int(hours):01d}'+'h '+f'{int(minutes):02d}'+'m '+f'{int(seconds):02d}'+'s '+f'{int(milliseconds):03d}'+'ms'
-        else:
-            return f'{int(days):01d}'+'d '+f'{int(hours):02d}'+'h '+f'{int(minutes):02d}'+'m '+f'{int(seconds):02d}'+'s '+f'{int(milliseconds):03d}'+'ms'
-
 categories = [category for category in game.categories]
 categories_FG = [category for category in categories if category.type == 'per-game']
 categories_IL = [category for category in categories if category.type == 'per-level']
 levels = [level for level in game.levels]
 
-records_FG = {}     # leaderboard of Full Game runs
+def get_leaderboard_params(category, record_index, top_count, use_defaults):
+    """Handles the extraction of default variables into the params dictionary."""
+    params = {'top': top_count}
+    
+    if not use_defaults:
+        return params
+
+    record = category.records[record_index]
+    if not record.runs:
+        return params
+
+    # Extract the variable IDs from the first run's values
+    run_value_ids = record.runs[0]['run'].values
+    
+    for var in category.variables:
+        has_default = var.values.get('default') is not None
+        is_active = any(var.id == val for val in run_value_ids)
+        
+        if is_active and has_default:
+            params[f"var-{var.id}"] = var.values['default']
+            
+    return params
+
+# --- Full Game (FG) Logic ---
+records_FG = {}
 for category in categories_FG:
-    params = {'top': 3}
-    if defaults_FG and category.records[0].runs != []:     # pick out the default variables but avoid list index overflow error
-        variables = [v for v in category.variables if (any(v.id == value for value in category.records[0].runs[0]['run'].values) and v.values['default'] is not None)]
-        for value in variables:
-            params.update({"var-{}".format(value.id): value.values['default']})
-    records_FG[category.name] = sdt.Leaderboard(api, data=api.get("leaderboards/{}/category/{}".format(game.id, category.id), params=params))
+    params = get_leaderboard_params(category, 0, 3, defaults_FG)
+    endpoint = f"leaderboards/{game.id}/category/{category.id}"
+    records_FG[category.name] = sdt.Leaderboard(api, data=api.get(endpoint, params=params))
 
-records_IL = {}     # leaderboard of IL runs
-for level in levels:
-  records_IL[level.name] = {}    
-  for category in categories_IL:
-      params = {'top': 1}
-      if defaults_IL and category.records[levels.index(level)].runs != []:     # pick out the default variables but avoid list index overflow error
-          variables = [v for v in category.variables if (any(v.id == value for value in category.records[levels.index(level)].runs[0]['run'].values) and v.values['default'] is not None)]
-          for value in variables:
-              params.update({"var-{}".format(value.id): value.values['default']})
-      records_IL[level.name][category.name] = sdt.Leaderboard(api, data=api.get("leaderboards/{}/level/{}/{}".format(game.id, level.id, category.id), params=params))
+# --- Individual Levels (IL) Logic ---
+records_IL = {}
+for idx, level in enumerate(levels):
+    records_IL[level.name] = {}
+    for category in categories_IL:
+        params = get_leaderboard_params(category, idx, 1, defaults_IL)
+        endpoint = f"leaderboards/{game.id}/level/{level.id}/{category.id}"
+        records_IL[level.name][category.name] = sdt.Leaderboard(api, data=api.get(endpoint, params=params))
 
+def join_runners_name(players):
+    """Joins player names with a center dot."""
+    return '·'.join(p.name for p in players)
+
+def get_wr_cell(record):
+    """Returns a formatted string of Time + Players for the WR run(s)."""
+    # Filter for first place runs
+    wr_runs = [r for r in record.runs if r['place'] == 1]
+    
+    if not wr_runs:
+        return ""
+
+    # Get the time from the first WR run
+    time_str = seconds_to_time_format(wr_runs[0]['run'].times['primary_t'])
+    
+    # Collect all record holders (handles ties)
+    holders = []
+    for run_data in wr_runs:
+        holders.append(join_runners_name(run_data['run'].players))
+    
+    # Return time followed by player names on new lines
+    return f"{time_str}\n" + "\n".join(holders)
 
 #%% IL leaderbord
-
+combo = []
 if make_IL:
     table = []
     for level in levels:
@@ -90,7 +131,7 @@ if make_IL:
                 combo.append("")
             else:
                 runs = [run for run in records_IL[level.name][category.name].runs if run['place'] == 1]
-                times.append(convert(runs[0]['run'].times['primary_t']))
+                times.append(seconds_to_time_format(runs[0]['run'].times['primary_t']))
                 record_holders = ""
                 for wr in runs:
                     runners = ""
@@ -146,7 +187,7 @@ if make_FG:
                 names.append("")
                 combo.append("")
             else:
-                times.append(convert(rank[0]['run'].times['primary_t']))
+                times.append(seconds_to_time_format(rank[0]['run'].times['primary_t']))
                 record_holders = ""
                 for run in rank:
                     runners = ""
