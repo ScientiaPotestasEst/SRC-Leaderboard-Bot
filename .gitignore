@@ -1,7 +1,10 @@
 # Stuff that git should ignore.
+data
 *.db
 *.bak
 *.dat
 *.dir
-*.txt
+.devcontainer
+.vscode
+.env
 __pycache__
