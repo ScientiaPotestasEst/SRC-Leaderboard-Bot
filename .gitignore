@@ -7,4 +7,5 @@ data
 .devcontainer
 .vscode
 .env
+test
 __pycache__

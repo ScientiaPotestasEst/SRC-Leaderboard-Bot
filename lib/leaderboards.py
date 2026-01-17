@@ -1,6 +1,8 @@
 import srcomapi
 import srcomapi.datatypes as sdt
+import matplotlib.pyplot as plt
 import pandas as pd
+import csv
 from table2ascii import table2ascii, PresetStyle, Alignment
 import shelve
 
@@ -54,6 +56,8 @@ categories_FG = [category for category in categories if category.type == 'per-ga
 categories_IL = [category for category in categories if category.type == 'per-level']
 levels = [level for level in game.levels]
 
+player_colors = {}
+
 def get_leaderboard_params(category, record_index, top_count, use_defaults):
     """Handles the extraction of default variables into the params dictionary."""
     params = {'top': top_count}
@@ -76,6 +80,49 @@ def get_leaderboard_params(category, record_index, top_count, use_defaults):
             params[f"var-{var.id}"] = var.values['default']
             
     return params
+
+def save_df_as_image(df, filename):
+    # Total figure height should scale with the total number of lines
+    fig, ax = plt.subplots()
+    fig.set_figwidth(15)
+    # Hide the axes (the X and Y lines/ticks)
+    ax.axis('off')
+
+    # 2. Create the Table
+    table = ax.table(
+        cellText=df.values, 
+        colLabels=df.columns, 
+        cellLoc='center', 
+        loc='center'
+    )
+
+    # 3. Styling the Table
+    table.auto_set_font_size(False)
+    table.set_fontsize(12)
+    # table.scale(1, 2)  # Stretch cells vertically for better padding
+    table.auto_set_column_width(col=list(range(len(df.columns))))
+
+    # Apply the height to each cell
+    for (row, col), cell in table.get_celld().items():
+        cell.set_height(0.15) # 0.05 is a base height factor
+
+    # Color the Header and Rows
+    for (row, col), cell in table.get_celld().items():
+        cell.set_facecolor("none")
+
+        if row == 0:  # Header Row
+            cell.set_text_props(weight='bold', color='#3498db') # Blue header text
+        else:         # Data Rows
+            cell.set_text_props(color='white') # White text for data rows
+        
+        # Optional: Change the border (edge) color to be more subtle
+        cell.set_edgecolor('#555555')
+
+    # 4. Save the image
+    image_path = f"./data/db/{filename}"
+    plt.savefig(image_path, transparent=True, bbox_inches='tight', dpi=500)
+    plt.close()
+    print(f"Success! Image saved as {filename}")
 
 # --- Full Game (FG) Logic ---
 records_FG = {}
@@ -119,7 +166,7 @@ def get_wr_cell(record):
 #%% IL leaderbord
 combo = []
 if make_IL:
-    table = []
+    IL_table = []
     for level in levels:
         times = []
         names = []
@@ -143,22 +190,24 @@ if make_IL:
                     record_holders = record_holders + '\n' + runners
                 names.append(record_holders)
                 combo.append(times[categories_IL.index(category)] + names[categories_IL.index(category)])
-        table.append(combo)
+        IL_table.append(combo)
     
     if orientation_IL == 'vertical':
-        headers = [' Category\\Stage '] + [' '+level.name+' ' for level in levels]
-        table = [list(i) for i in zip(*table)]
+        IL_headers = [' Category\\Stage '] + [' '+level.name+' ' for level in levels]
+        IL_table = [list(i) for i in zip(*IL_table)]
         for category in categories_IL:
-            table[categories_IL.index(category)].insert(0, category.name)
+            IL_table[categories_IL.index(category)].insert(0, category.name)
     
     elif orientation_IL == 'horizontal':
-        headers = [' Stage\\Category '] + [('   '+category.name+'   ') for category in categories_IL]
+        IL_headers = [' Stage\\Category '] + [('   '+category.name+'   ') for category in categories_IL]
         for level in levels:
-            table[levels.index(level)].insert(0, level.name)
+            IL_table[levels.index(level)].insert(0, level.name)
 
+
+    
     output = table2ascii(
-        header=headers,
-        body=table,
+        header=IL_headers,
+        body=IL_table,
         first_col_heading=True,
         # column_widths=[30, 30, 30, 30],
         alignments=Alignment.CENTER,
@@ -168,11 +217,13 @@ if make_IL:
     with open('./data/db/Individual_Levels_Leaderboard.txt', 'w', encoding="utf-8") as f:
         f.write(output)
 
+    IL_df = pd.DataFrame(IL_table, columns=IL_headers)
+    save_df_as_image(IL_df, "IL_leaderboards.png")
 
 #%% FG leaderbord
 
 if make_FG:
-    table = []
+    FG_table = []
     for category in categories_FG:
         times = []
         names = []
@@ -199,23 +250,23 @@ if make_FG:
                     record_holders = record_holders + '\n' + runners
                 names.append(record_holders)
                 combo.append(times[placements.index(rank)] + names[placements.index(rank)])
-        table.append(combo)
+        FG_table.append(combo)
     
     if orientation_FG == 'vertical':
-        headers = [' Category\\Placement ', ' First place ', ' Second place ', ' Third place ']
+        FG_headers = [' Category\\Placement ', ' First place ', ' Second place ', ' Third place ']
         for category in categories_FG:
-            table[categories_FG.index(category)].insert(0, category.name)
+            FG_table[categories_FG.index(category)].insert(0, category.name)
     
     elif orientation_IL == 'horizontal':
-        headers = [' Placement\\Category '] + [('   '+category.name+'   ') for category in categories_FG]
-        table = [list(i) for i in zip(*table)]
-        table[0].insert(0, ' 1st ')
-        table[1].insert(0, ' 2nd ')
-        table[2].insert(0, ' 3rd ')
+        FG_headers = [' Placement\\Category '] + [('   '+category.name+'   ') for category in categories_FG]
+        FG_table = [list(i) for i in zip(*FG_table)]
+        FG_table[0].insert(0, ' 1st ')
+        FG_table[1].insert(0, ' 2nd ')
+        FG_table[2].insert(0, ' 3rd ')
         
     output = table2ascii(
-        header=headers,
-        body=table,
+        header=FG_headers,
+        body=FG_table,
         first_col_heading=True,
         # column_widths=[30, 30, 30, 30],
         alignments=Alignment.CENTER,
@@ -225,6 +276,8 @@ if make_FG:
     with open('./data/db/Full_Game_Leaderboard.txt', 'w', encoding="utf-8") as f:
         f.write(output)
 
+    FG_df = pd.DataFrame(FG_table, columns=FG_headers)
+    save_df_as_image(FG_df, "FG_leaderboards.png")
 
 #%% Ranking
 
@@ -263,9 +316,9 @@ if make_ranking:
     sorted_ranking = sorted(ranking.items(), key = lambda x: x[1]['Total'], reverse=True)
 
 
-    headers = [' Rank ', ' Runner '] + [' Full Game '] + [(' '+c.name+' ') for c in categories_IL] + ['Total']
+    ranking_headers = [' Rank ', ' Runner '] + [' Full Game '] + [(' '+c.name+' ') for c in categories_IL] + ['Total']
 
-    table = []
+    ranking_table = []
     for rank in range(len(sorted_ranking)):
         runner = sorted_ranking[rank][0]
         rank_IL = []
@@ -273,14 +326,14 @@ if make_ranking:
             rank_IL.append(sorted_ranking[rank][1]['Individual Levels'][category.name])
         if rank > 0 and sorted_ranking[rank][1]['Total'] == sorted_ranking[rank-1][1]['Total']:
             tie = [t for t in range(len(sorted_ranking)) if sorted_ranking[t][1]['Total'] == sorted_ranking[rank][1]['Total']]
-            table.append([min(tie)+1] + [runner] + [sorted_ranking[rank][1]['Full Game']] + rank_IL + [sorted_ranking[rank][1]['Total']])
+            ranking_table.append([min(tie)+1] + [runner] + [sorted_ranking[rank][1]['Full Game']] + rank_IL + [sorted_ranking[rank][1]['Total']])
         else:
-            table.append([rank+1] + [runner] + [sorted_ranking[rank][1]['Full Game']] + rank_IL + [sorted_ranking[rank][1]['Total']])
+            ranking_table.append([rank+1] + [runner] + [sorted_ranking[rank][1]['Full Game']] + rank_IL + [sorted_ranking[rank][1]['Total']])
 
 
     output = table2ascii(
-        header=headers,
-        body=table,
+        header=ranking_headers,
+        body=ranking_table,
         first_col_heading=True,
         # column_widths=[30, 30, 30, 30],
         alignments=Alignment.CENTER,
@@ -290,6 +343,8 @@ if make_ranking:
     with open('./data/db/Ranking_Leaderboard.txt', 'w', encoding="utf-8") as f:
         f.write(output)
 
+    ranking_df = pd.DataFrame(ranking_table, columns=ranking_headers)
+    save_df_as_image(ranking_df, "ranking_leaderboards.png")
 
 #%% Confirm update
 
