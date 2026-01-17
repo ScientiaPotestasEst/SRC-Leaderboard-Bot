@@ -1,15 +1,17 @@
 from discord import Intents
 from discord.ext.commands import Bot, MissingPermissions
+import os
 from os import listdir
 from asyncio import run
+from dotenv import load_dotenv
 
 # from lib import setup
 
 PREFIX = '$'
 INTENTS = Intents.all()
-with open('./lib/token.txt', 'r') as file:
-    TOKEN = file.read()
 
+load_dotenv()
+TOKEN = os.getenv('SMOL_AME_TOKEN')
 bot = Bot(command_prefix=PREFIX, intents=INTENTS)
 
 @bot.event

@@ -26,15 +26,15 @@ class Updating(Cog):
     @tasks.loop(time=times)
     async def lb_update(self):
         for filename in listdir('./data/db'):
-            if filename.endswith('Leaderboard.txt'):
-                replace(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}")
+            if filename.endswith('Leaderboard.png'):
+                replace(f"./data/db/{filename}", f"./data/db/{filename.replace('.png', '_old.png')}")
         
         system('python ./lib/leaderboards.py')
 
         changes = []
         for filename in listdir('./data/db'):
-                    if filename.endswith('Leaderboard.txt'):
-                        changes.append(not cmp(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}"))
+                    if filename.endswith('Leaderboard.png'):
+                        changes.append(not cmp(f"./data/db/{filename}", f"./data/db/{filename.replace('.png', '_old.png')}"))
 
         if update_channel and any(changes):
             channel = self.bot.get_channel(CHANNEL_ID)
@@ -44,7 +44,7 @@ class Updating(Cog):
                 await channel.send("No leaderboards have been created.")
             else:
                 for filename in sorted(listdir('./data/db')):
-                    if filename.endswith('Leaderboard.txt'):
+                    if filename.endswith('Leaderboard.png'):
                         await channel.send(f"__**{filename.replace('_',' ')[:-4]}**__", file=File(f"./data/db/{filename}"))
     
     @command(name='leaderboard_update', aliases=['lb_update', 'update'])
@@ -53,8 +53,8 @@ class Updating(Cog):
         msg = await ctx.send("Updating leaderboards...")
 
         for filename in listdir('./data/db'):
-            if filename.endswith('Leaderboard.txt'):
-                replace(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}")
+            if filename.endswith('Leaderboard.png'):
+                replace(f"./data/db/{filename}", f"./data/db/{filename.replace('.png', '_old.png')}")
         
         system('python ./lib/leaderboards.py')
 
@@ -63,8 +63,8 @@ class Updating(Cog):
 
         changes = []
         for filename in listdir('./data/db'):
-                    if filename.endswith('Leaderboard.txt'):
-                        changes.append(not cmp(f"./data/db/{filename}", f"./data/db/{filename.replace('.txt', '_old.txt')}"))
+                    if filename.endswith('Leaderboard.png'):
+                        changes.append(not cmp(f"./data/db/{filename}", f"./data/db/{filename.replace('.png', '_old.png')}"))
 
         if update_channel and any(changes):
             channel = self.bot.get_channel(CHANNEL_ID)
@@ -74,7 +74,7 @@ class Updating(Cog):
                 await channel.send("No leaderboards have been created.")
             else:
                 for filename in sorted(listdir('./data/db')):
-                    if filename.endswith('Leaderboard.txt'):
+                    if filename.endswith('Leaderboard.png'):
                         await channel.send(f"__**{filename.replace('_',' ')[:-4]}**__", file=File(f"./data/db/{filename}"))
 
     @Cog.listener()
