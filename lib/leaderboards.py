@@ -2,8 +2,6 @@ import srcomapi
 import srcomapi.datatypes as sdt
 import matplotlib.pyplot as plt
 import pandas as pd
-import csv
-from table2ascii import table2ascii, PresetStyle, Alignment
 import shelve
 
 # ----------- Helper Functions --------------- 
@@ -207,22 +205,8 @@ if make_IL:
         for level in levels:
             IL_table[levels.index(level)].insert(0, level.name)
 
-
-    
-    output = table2ascii(
-        header=IL_headers,
-        body=IL_table,
-        first_col_heading=True,
-        # column_widths=[30, 30, 30, 30],
-        alignments=Alignment.CENTER,
-        style=PresetStyle.double_thin_box
-    )
-
-    with open('./data/db/Individual_Levels_Leaderboard.txt', 'w', encoding="utf-8") as f:
-        f.write(output)
-
     IL_df = pd.DataFrame(IL_table, columns=IL_headers)
-    save_df_as_image(IL_df, "IL_leaderboards.png")
+    save_df_as_image(IL_df, "Individual_Levels_Leaderboard.png")
 
 #%% FG leaderbord
 
@@ -267,21 +251,9 @@ if make_FG:
         FG_table[0].insert(0, ' 1st ')
         FG_table[1].insert(0, ' 2nd ')
         FG_table[2].insert(0, ' 3rd ')
-        
-    output = table2ascii(
-        header=FG_headers,
-        body=FG_table,
-        first_col_heading=True,
-        # column_widths=[30, 30, 30, 30],
-        alignments=Alignment.CENTER,
-        style=PresetStyle.double_thin_box
-    )
-
-    with open('./data/db/Full_Game_Leaderboard.txt', 'w', encoding="utf-8") as f:
-        f.write(output)
 
     FG_df = pd.DataFrame(FG_table, columns=FG_headers)
-    save_df_as_image(FG_df, "FG_leaderboards.png")
+    save_df_as_image(FG_df, "Full_Game_Leaderboard.png")
 
 #%% Ranking
 
@@ -334,21 +306,8 @@ if make_ranking:
         else:
             ranking_table.append([rank+1] + [runner] + [sorted_ranking[rank][1]['Full Game']] + rank_IL + [sorted_ranking[rank][1]['Total']])
 
-
-    output = table2ascii(
-        header=ranking_headers,
-        body=ranking_table,
-        first_col_heading=True,
-        # column_widths=[30, 30, 30, 30],
-        alignments=Alignment.CENTER,
-        style=PresetStyle.double_thin_box
-    )
-
-    with open('./data/db/Ranking_Leaderboard.txt', 'w', encoding="utf-8") as f:
-        f.write(output)
-
     ranking_df = pd.DataFrame(ranking_table, columns=ranking_headers)
-    save_df_as_image(ranking_df, "ranking_leaderboards.png")
+    save_df_as_image(ranking_df, "Ranking_Leaderboard.png")
 
 #%% Confirm update
 
