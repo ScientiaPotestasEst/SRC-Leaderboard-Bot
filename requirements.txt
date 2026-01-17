@@ -1,7 +1,6 @@
 discord.py==2.6.4
-matplotlib==3.10.8
-numpy==2.4.1
 pandas==2.3.3
-python-dotenv==1.2.1
 srcomapi==0.3.3
+python-dotenv==1.2.1
+matplotlib==3.9.4
 table2ascii==1.1.3
