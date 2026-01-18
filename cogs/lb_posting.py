@@ -9,21 +9,21 @@ class Posting(Cog):
     
     @command(name='leaderboard_FG', aliases=['lb_FG', 'FG'])
     async def post_FG_leaderboard(self, ctx):
-        if isfile("./data/db/FG_leaderboards.png"):
+        if isfile("./data/db/Full_Game_Leaderboard.png"):
             await ctx.send("__**Full Game Leaderboard**__", file=File("./data/db/Full_Game_Leaderboard.png"))
         else:
             await ctx.send("This leaderboard does not exist.")
     
     @command(name='leaderboard_IL', aliases=['lb_IL', 'IL'])
     async def post_IL_leaderboard(self, ctx):
-        if isfile("./data/db/IL_leaderboards.png"):
+        if isfile("./data/db/Individual_Levels_Leaderboard.png"):
             await ctx.send("__**Individual Levels Leaderboard**__", file=File("./data/db/Individual_Levels_Leaderboard.png"))
         else:
             await ctx.send("This leaderboard does not exist.")
     
     @command(name='leaderboard_ranking', aliases=['lb_ranking', 'ranking'])
     async def post_ranking_leaderboard(self, ctx):
-        if isfile("./data/db/ranking_leaderboards.png"):
+        if isfile("./data/db/Ranking_Leaderboard.png"):
             await ctx.send("__**Ranking Leaderboard**__", file=File("./data/db/Ranking_Leaderboard.png"))
         else:
             await ctx.send("This leaderboard does not exist.")
