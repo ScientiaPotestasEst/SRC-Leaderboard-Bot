@@ -3,10 +3,21 @@ import srcomapi.datatypes as sdt
 import matplotlib.pyplot as plt
 import pandas as pd
 import shelve
+import random
+import os
+import json
 
-player_colors = {}
+DB_PATH = os.path.join("data", "db")
+CONFIG_PATH = os.path.join("data", "config")
+JSON_PATH = os.path.join(DB_PATH, "player_colors.json")
 
-with shelve.open('./data/config') as db:
+if os.path.exists(JSON_PATH):
+    with open(JSON_PATH, "r") as f:
+        player_colors = json.load(f)
+else:
+    player_colors = {}
+
+with shelve.open(CONFIG_PATH) as db:
     game_name = db['game_name']
     game_choice = db['game_choice']
     make_FG = db['make_FG']
@@ -112,16 +123,56 @@ def save_df_as_image(df, filename):
         if row == 0:  # Header Row
             cell.set_text_props(weight='bold', color='#ff9900') # Blue header text
         else:         # Data Rows
-            cell.set_text_props(color='#3498db')
-        
+            cell_text = cell.get_text().get_text()
+            # Check each player name in your dictionary
+            for player_name, color in player_colors.items():
+                if player_name in cell_text:
+                    # Match found! Apply the color and exit this inner loop
+                    cell.get_text().set_color(color)
+                    break
+                else:
+                    cell.get_text().set_color('#3498db')
+
         # Optional: Change the border (edge) color to be more subtle
         cell.set_edgecolor('#555555')
 
     # 4. Save the image
-    image_path = f"./data/db/{filename}"
+    image_path = os.path.join(DB_PATH, filename)
     plt.savefig(image_path, transparent=True, bbox_inches='tight', dpi=500)
     plt.close()
     print(f"Success! Image saved as {filename}")
+
+def join_runners_name(players):
+    """Joins player names with a center dot."""
+    return '·'.join(p.name for p in players)
+
+def get_wr_cell(record):
+    """Returns a formatted string of Time + Players for the WR run(s)."""
+    # Filter for first place runs
+    wr_runs = [r for r in record.runs if r['place'] == 1]
+    
+    if not wr_runs:
+        return ""
+
+    # Get the time from the first WR run
+    time_str = seconds_to_time_format(wr_runs[0]['run'].times['primary_t'])
+    
+    # Collect all record holders (handles ties)
+    holders = []
+    for run_data in wr_runs:
+        holders.append(join_runners_name(run_data['run'].players))
+    
+    # Return time followed by player names on new lines
+    return f"{time_str}\n" + "\n".join(holders)
+
+def add_players_to_dict(records : dict):
+    # Add players in dictionary
+    for key,value in records.items():
+        for run in value.runs:
+            for player in run['run'].players:
+                if player.name not in player_colors:
+                    # Generates a random hex color (e.g., #FFFFFF)
+                    player_colors[player.name] = "#%06x" % random.randint(0, 0xFFFFFF)
 
 def update_leaderboards():
     print("Updating leaderboards...")
@@ -133,6 +184,8 @@ def update_leaderboards():
         endpoint = f"leaderboards/{game.id}/category/{category.id}"
         records_FG[category.name] = sdt.Leaderboard(api, data=api.get(endpoint, params=params))
 
+    add_players_to_dict(records_FG)
+
     # --- Individual Levels (IL) Logic ---
     records_IL = {}
     for idx, level in enumerate(levels):
@@ -141,29 +194,9 @@ def update_leaderboards():
             params = get_leaderboard_params(category, idx, 1, defaults_IL)
             endpoint = f"leaderboards/{game.id}/level/{level.id}/{category.id}"
             records_IL[level.name][category.name] = sdt.Leaderboard(api, data=api.get(endpoint, params=params))
-
-    def join_runners_name(players):
-        """Joins player names with a center dot."""
-        return '·'.join(p.name for p in players)
-
-    def get_wr_cell(record):
-        """Returns a formatted string of Time + Players for the WR run(s)."""
-        # Filter for first place runs
-        wr_runs = [r for r in record.runs if r['place'] == 1]
-        
-        if not wr_runs:
-            return ""
-
-        # Get the time from the first WR run
-        time_str = seconds_to_time_format(wr_runs[0]['run'].times['primary_t'])
-        
-        # Collect all record holders (handles ties)
-        holders = []
-        for run_data in wr_runs:
-            holders.append(join_runners_name(run_data['run'].players))
-        
-        # Return time followed by player names on new lines
-        return f"{time_str}\n" + "\n".join(holders)
+    
+    for level_record in records_IL.values():
+        add_players_to_dict(level_record)
 
     #%% IL leaderbord
     combo = []
@@ -310,5 +343,7 @@ def update_leaderboards():
         save_df_as_image(ranking_df, "Ranking_Leaderboard.png")
 
     #%% Confirm update
-
+    
+    with open(JSON_PATH, "w") as f:
+        json.dump(player_colors, f, indent=4)
     print("Leaderboards updated")
