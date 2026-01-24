@@ -15,9 +15,6 @@ with shelve.open('./data/config') as db:
 utc = timezone.utc
 DB_PATH = os.path.join("data", "db")
 
-# If no tzinfo is given then UTC is assumed.
-times = time(hour=0, minute=0, second=0, tzinfo=utc)
-
 class Updating(Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -64,7 +61,7 @@ class Updating(Cog):
                         title = filename.replace('_', ' ').replace('.png', '')
                         await channel.send(f"__**{title}**__", file=File(current_path))
 
-    @tasks.loop(time=times)
+    @tasks.loop(minutes=5)
     async def lb_update(self):
         self.create_backup_of_current_lb()
         

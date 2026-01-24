@@ -140,7 +140,6 @@ def save_df_as_image(df, filename):
     image_path = os.path.join(DB_PATH, filename)
     plt.savefig(image_path, transparent=True, bbox_inches='tight', dpi=500)
     plt.close()
-    print(f"Success! Image saved as {filename}")
 
 def join_runners_name(players):
     """Joins player names with a center dot."""
