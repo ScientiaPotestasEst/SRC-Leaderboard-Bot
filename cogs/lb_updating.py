@@ -51,12 +51,12 @@ class Updating(Cog):
                 await channel.send("No leaderboards have been created.")
             else:
                 # Sort the generator results by the filename (the 3rd item in our yield)
-                leaderboards = sorted(self.get_lb_files(), key=lambda x: x[2])
+                lbs = sorted(self.get_lb_files(), key=lambda x: x[2])
 
-                if not leaderboards:
+                if not lbs:
                     await channel.send("No leaderboards have been created.")
                 else:
-                    for current_path, _, filename in leaderboards:
+                    for current_path, _, filename in lbs:
                         # Clean up name: remove underscores and the '.png' extension
                         title = filename.replace('_', ' ').replace('.png', '')
                         await channel.send(f"__**{title}**__", file=File(current_path))
