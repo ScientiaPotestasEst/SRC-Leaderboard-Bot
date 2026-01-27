@@ -43,7 +43,7 @@ class Updating(Cog):
             else:
                 changes.append(True)
 
-        if update_channel and any(changes):
+        if any(changes):
             channel = self.bot.get_channel(CHANNEL_ID)
             await channel.purge(limit = 10)
 
